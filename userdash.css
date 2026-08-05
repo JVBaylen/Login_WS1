@@ -29,12 +29,12 @@ body{
     box-shadow:0 8px 20px rgba(0,0,0,.12);
 }
 
-.logo{
-    font-size:28px;
-    font-weight:bold;
-    color:var(--fifth);
-}
 
+.logo img{
+    width:55px;
+    height:55px;
+    border-radius:50%;
+}
 .nav-links{
     list-style:none;
     display:flex;
