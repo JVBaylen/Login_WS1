@@ -1,0 +1,142 @@
+:root{
+    --primary:#ffffff;
+    --second:#E3F2FD;
+    --third:#90CAF9;
+    --fourth:#2196F3;
+    --fifth:#0D47A1;
+    --sixth:#1565C0;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:linear-gradient(135deg,#90CAF9,#2196F3,#0D47A1);
+    min-height:100vh;
+}
+
+.navbar{
+    width:100%;
+    background:var(--primary);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 60px;
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+}
+
+.logo{
+    font-size:28px;
+    font-weight:bold;
+    color:var(--fifth);
+}
+
+.nav-links{
+    list-style:none;
+    display:flex;
+    gap:18px;
+}
+
+.nav-links a{
+    text-decoration:none;
+    color:var(--fifth);
+    padding:10px 18px;
+    border-radius:8px;
+    font-weight:600;
+    transition:.3s;
+}
+
+.nav-links a:hover,
+.nav-links a.active{
+    background:var(--fourth);
+    color:var(--primary);
+}
+
+.dashboard{
+    width:90%;
+    max-width:1200px;
+    margin:40px auto;
+}
+
+.hero{
+    background:var(--primary);
+    border-radius:18px;
+    padding:35px;
+    box-shadow:0 15px 40px rgba(0,0,0,.2);
+    margin-bottom:30px;
+}
+
+.hero h1{
+    color:var(--fifth);
+    font-size:34px;
+    margin-bottom:10px;
+}
+
+.hero p{
+    color:#555;
+    font-size:16px;
+}
+
+.products{
+    background:var(--primary);
+    border-radius:18px;
+    padding:30px;
+    box-shadow:0 15px 40px rgba(0,0,0,.2);
+}
+
+.products h2{
+    color:var(--fifth);
+    margin-bottom:25px;
+}
+
+.product{
+    display:flex;
+    flex-wrap:wrap;
+    gap:25px;
+}
+
+.product-card{
+    background:var(--second);
+    border-radius:15px;
+    overflow:hidden;
+    transition:.3s;
+}
+
+.product-card img{
+    width:200px;
+    height:200px;
+    object-fit:cover;
+    padding:20px;
+    margin:0 auto;
+}
+
+.product-content{
+    padding:20px;
+    margin-bottom:10px;
+}
+
+.category{
+    color:#666;
+    font-size:14px;
+    margin-bottom:6px;
+}
+
+.product-content h3{
+    color:var(--fifth);
+    font-size:20px;
+}
+
+footer{
+    margin-top:40px;
+    background:var(--primary);
+    text-align:center;
+    padding:18px;
+    color:var(--fifth);
+    font-weight:600;
+    box-shadow:0 -5px 15px rgba(0,0,0,.08);
+}
+
