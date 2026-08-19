@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Login Page</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        
+        <section class="form">
+            <div class="form-container">
+                <div class="welcome">
+                    <h1>Welcome Back!</h1>
+                </div>
+                <form class="login-form" action="process_login.php" method="POST">
+                    <div class="logo">
+                        <img src="Westeria Logo with Fierce Wolf Emblem.png" alt="Logo">
+                    </div>
+        
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" placeholder="username" required>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" placeholder="password" required>
+                    <div class="button-container">
+                        <button type="submit">Login</button>
+                    </div>
+                    <div class="create-account">
+                        <button type="button" onclick="window.location.href='form.html'">Create Account</button>
+                    </div>
+                </form>
+
+        </section>
+    </body>
+</html>
