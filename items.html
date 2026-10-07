@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Westerian Dashboard</title>
+    <link rel="stylesheet" href="staffdash.css">
+
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <img src="Westeria Logo with Fierce Wolf Emblem.png" alt="Westeria Logo">
+        </div>
+
+        <nav>
+            <ul class="nav-links">
+                <li><a href="staffdash.html">Members</a></li>
+                <li><a href="items.html">Items</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li class="logout"><a href="login.html">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="hero">
+            <h1>Welcome, Worker!</h1>
+        </section>
+
+        <section class="products">
+
+            <div class="items-header">
+                <h2>Items</h2>
+
+                <button class="add-item-btn" onclick="openAddItemModal()">
+                    + Add Item
+                </button>
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <div class="product" id="productList">
+                <div class="empty-message">
+                    Loading items...
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Westeria Inventory System</p>
+    </footer>
+
+
+
+    <div class="modal" id="addItemModal">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h2>Add Item</h2>
+
+                <button class="close-btn" onclick="closeAddItemModal()">
+                    &times;
+                </button>
+            </div>
+
+            <form id="addItemForm" enctype="multipart/form-data">
+
+                <div class="form-group">
+                    <label for="itemPicture">Item Picture</label>
+
+                    <input
+                        type="file"
+                        id="itemPicture"
+                        name="picture"
+                        accept="image/*"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+
+                    <input
+                        type="text"
+                        id="itemName"
+                        name="name"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="itemPrice">Price</label>
+
+                    <input
+                        type="text"
+                        id="itemPrice"
+                        name="price"
+                        placeholder="Example: ₱100.00"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="save-item-btn">
+                    Save Item
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+<script>
+
+    const modal = document.getElementById("addItemModal");
+    const form = document.getElementById("addItemForm");
+    const productList = document.getElementById("productList");
+    const message = document.getElementById("message");
+
+
+
+    function openAddItemModal() {
+        modal.style.display = "flex";
+    }
+
+
+
+    function closeAddItemModal() {
+        modal.style.display = "none";
+        form.reset();
+    }
+
+
+
+    window.onclick = function(event) {
+
+        if (event.target === modal) {
+            closeAddItemModal();
+        }
+
+    };
+
+
+
+    async function loadItems() {
+
+        try {
+
+            const response = await fetch("process_items.php?action=list");
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message);
+            }
+
+            productList.innerHTML = "";
+
+            if (data.items.length === 0) {
+
+                productList.innerHTML = `
+                    <div class="empty-message">
+                        No items have been added yet.
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            data.items.forEach(item => {
+
+                const card = document.createElement("div");
+
+                card.className = "product-card";
+
+                card.innerHTML = `
+
+                    <img
+                        src="data:image/jpeg;base64,${item.picture}"
+                        alt="${escapeHTML(item.name)}"
+                    >
+
+                    <div class="product-content">
+
+                        <p class="category">
+                            ${escapeHTML(item.name)}
+                        </p>
+
+                        <h3>
+                            ₱${escapeHTML(item.price)}
+                        </h3>
+
+                    </div>
+
+                    <div class="memberbutton">
+
+                        <button
+                            class="block"
+                            onclick="removeItem(${item.id})"
+                        >
+                            Remove
+                        </button>
+
+                    </div>
+                `;
+
+                productList.appendChild(card);
+
+            });
+
+        } catch (error) {
+
+            productList.innerHTML = `
+                <div class="empty-message">
+                    Unable to load items.
+                </div>
+            `;
+
+            showMessage(error.message, "error");
+        }
+    }
+
+
+    form.addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const formData = new FormData(form);
+
+        try {
+
+            const response = await fetch("process_items.php", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message);
+            }
+
+            closeAddItemModal();
+
+            showMessage("Item added successfully!", "success");
+
+            loadItems();
+
+        } catch (error) {
+
+            showMessage(error.message, "error");
+
+        }
+
+    });
+
+
+
+    async function removeItem(id) {
+
+        if (!confirm("Are you sure you want to remove this item?")) {
+            return;
+        }
+
+        try {
+
+            const formData = new FormData();
+
+            formData.append("action", "remove");
+            formData.append("id", id);
+
+            const response = await fetch("process_items.php", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message);
+            }
+
+            showMessage("Item removed successfully!", "success");
+
+            loadItems();
+
+        } catch (error) {
+
+            showMessage(error.message, "error");
+
+        }
+    }
+
+
+    function showMessage(text, type) {
+
+        message.textContent = text;
+
+        message.className = "message " + type;
+
+        message.style.display = "block";
+
+        setTimeout(() => {
+            message.style.display = "none";
+        }, 3000);
+    }
+
+
+
+    function escapeHTML(text) {
+
+        const div = document.createElement("div");
+
+        div.textContent = text;
+
+        return div.innerHTML;
+    }
+
+
+
+    loadItems();
+
+</script>
+
+</body>
+</html>
