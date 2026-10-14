@@ -1,0 +1,275 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Items | Westeria</title>
+
+    <link rel="stylesheet" href="userdash.css">
+
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <img
+                src="Westeria Logo with Fierce Wolf Emblem.png"
+                alt="Westeria Logo"
+            >
+        </div>
+
+        <nav>
+            <ul class="nav-links">
+                <li>
+                    <a href="userdash.html">Available Items</a>
+                </li>
+
+                <li>
+                    <a href="myitems.html" aria-current="page">
+                        My Items
+                    </a>
+                </li>
+
+                <li class="logout">
+                    <a href="login.html">Logout</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="hero">
+            <h1>My Items</h1>
+            <p>
+                View and manage the items you have selected
+                from the Westeria inventory.
+            </p>
+        </section>
+
+        <section class="myitems-section">
+
+            <h2>Your Inventory</h2>
+
+            <p class="myitems-description">
+                Items you buy from Available Items will appear here.
+            </p>
+
+            <div
+                id="myItemsMessage"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+            
+
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Westeria Inventory System</p>
+    </footer>
+
+    <script>
+        "use strict";
+
+        const myItemsList =
+            document.getElementById("myItemsList");
+
+        const myItemsMessage =
+            document.getElementById("myItemsMessage");
+
+        const retryButton =
+            document.getElementById("retryButton");
+
+        let isLoading = false;
+
+        function formatPrice(value) {
+            const price = Number(value);
+
+            if (value === null || value === undefined ||
+                String(value).trim() === "" ||
+                !Number.isFinite(price)) {
+                return "Price unavailable";
+            }
+
+            return price.toLocaleString("en-PH", {
+                style: "currency",
+                currency: "PHP"
+            });
+        }
+
+        function getPicture(picture) {
+            if (!picture) {
+                return "";
+            }
+
+            const value = String(picture).trim();
+
+            if (value.startsWith("data:image/")) {
+                return value;
+            }
+
+            if (/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+                return "data:image/jpeg;base64," + value;
+            }
+
+            if (
+                !value.startsWith("http://") &&
+                !value.startsWith("https://") &&
+                !value.startsWith("/") &&
+                !value.startsWith("./") &&
+                !value.startsWith("../")
+            ) {
+                return value;
+            }
+
+            return value;
+        }
+
+        function createItemCard(item) {
+            const card = document.createElement("article");
+            card.className = "myitem-card";
+
+            const image = document.createElement("img");
+            image.alt = String(item.name || "Inventory item");
+            image.loading = "lazy";
+
+            const picture = getPicture(item.picture);
+
+            if (picture) {
+                image.src = picture;
+
+                image.addEventListener("error", function () {
+                    image.removeAttribute("src");
+                    image.alt = "Picture unavailable";
+                });
+            } else {
+                image.alt = "No picture available";
+            }
+
+            const content = document.createElement("div");
+            content.className = "myitem-content";
+
+            const name = document.createElement("h3");
+            name.textContent = String(item.name || "Unnamed Item");
+
+            const price = document.createElement("p");
+            price.className = "myitem-price";
+            price.textContent = formatPrice(item.price);
+
+            const status = document.createElement("span");
+            status.className = "myitem-status";
+            status.textContent = String(item.status || "Selected");
+
+            content.append(name, price, status);
+
+            if (item.date_added) {
+                const date = document.createElement("p");
+                date.className = "myitem-date";
+                date.textContent =
+                    "Added: " + String(item.date_added);
+
+                content.appendChild(date);
+            }
+
+            card.append(image, content);
+
+            return card;
+        }
+
+        async function loadMyItems() {
+            if (isLoading) {
+                return;
+            }
+
+            isLoading = true;
+            retryButton.hidden = true;
+            myItemsMessage.textContent = "";
+
+            myItemsList.replaceChildren();
+
+            const loading = document.createElement("p");
+            loading.className = "empty-message";
+            loading.textContent = "Loading your items...";
+
+            myItemsList.appendChild(loading);
+
+            try {
+                const response = await fetch(
+                    "process_items.php?action=myitems",
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                        credentials: "same-origin",
+                        headers: {
+                            "Accept": "application/json"
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Unable to load your items."
+                    );
+                }
+
+                if (!Array.isArray(data.items)) {
+                    throw new Error("Invalid items received from server.");
+                }
+
+                myItemsList.replaceChildren();
+
+                if (data.items.length === 0) {
+                    const empty = document.createElement("p");
+                    empty.className = "empty-message";
+                    empty.textContent =
+                        "You have no items yet. Visit Available Items to get started.";
+
+                    myItemsList.appendChild(empty);
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+
+                data.items.forEach(function (item) {
+                    fragment.appendChild(createItemCard(item));
+                });
+
+                myItemsList.appendChild(fragment);
+
+            } catch (error) {
+                console.error("My Items error:", error);
+
+                myItemsList.replaceChildren();
+
+                const message = document.createElement("p");
+                message.className = "empty-message";
+                message.textContent =
+                    "No Items yet visit Available Items";
+
+                myItemsList.appendChild(message);
+
+                myItemsMessage.textContent =
+                    error.message || "A server error occurred.";
+
+                retryButton.hidden = false;
+
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        retryButton.addEventListener("click", loadMyItems);
+
+        loadMyItems();
+    </script>
+
+</body>
+</html>
