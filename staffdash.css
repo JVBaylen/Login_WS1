@@ -301,7 +301,6 @@ body{
             background: #155c39;
         }
 
-        /* Item card */
         .product-card {
             width: 220px;
         }
@@ -338,6 +337,165 @@ body{
         }
 
 
+
+        .members-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .members-heading h2 {
+            margin: 0;
+        }
+
+        .refresh-info {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .members-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .member-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 20px;
+            border: 1px solid #d9e2ef;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            transition: background 0.25s, border-color 0.25s;
+        }
+
+        .member-card.blocked-card {
+            background: #f1f1f1;
+            border-color: #c7c7c7;
+        }
+
+        .member-avatar {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #2196f3;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .blocked-card .member-avatar {
+            background: #858585;
+        }
+
+        .member-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .member-info h3 {
+            margin: 0 0 7px;
+            overflow-wrap: anywhere;
+            font-size: 17px;
+        }
+
+        .member-status {
+            margin: 0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .member-status.active {
+            color: #168044;
+        }
+
+        .member-status.blocked {
+            color: #777;
+        }
+
+        .member-action {
+            margin-top: 12px;
+            padding: 9px 16px;
+            border: none;
+            border-radius: 7px;
+            background: #bb0000;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .member-action:hover {
+            background: #ff0000;
+            transform: translateY(-1px);
+        }
+
+        .member-action.unblock {
+            background: #00850b;
+            color: #fff;
+        }
+
+        .member-action.unblock:hover {
+            background: #004c06;
+        }
+
+        .member-action:disabled {
+            cursor: wait;
+            opacity: 0.65;
+            transform: none;
+        }
+
+        .members-message {
+            padding: 18px;
+            border-radius: 8px;
+            background: #f3f6fa;
+            color: #444;
+        }
+
+        .members-message.error {
+            background: #ffebee;
+            color: #b71c1c;
+        }
+
+        .notice {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .notice.success {
+            display: block;
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+
+        .notice.error {
+            display: block;
+            background: #ffebee;
+            color: #b71c1c;
+        }
+
+        @media (max-width: 600px) {
+            .members-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .members-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        
 .footer{
     margin-top:40px;
     background:var(--primary);
