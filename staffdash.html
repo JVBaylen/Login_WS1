@@ -1,56 +1,232 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Westerian Dashboard</title>
-    <link rel="stylesheet" href="userdash.css">
+    <link rel="stylesheet" href="staffdash.css">
+    
 </head>
 <body>
 
     <header class="navbar">
-    <div class="logo">
-        <img src="Westeria Logo with Fierce Wolf Emblem.png" alt="Westeria Logo">
-    </div>
+        <div class="logo">
+            <img src="Westeria Logo with Fierce Wolf Emblem.png" alt="Westeria Logo">
+        </div>
+
         <nav>
             <ul class="nav-links">
-                <li><a href="member.html">Members</a></li>
-                <li><a href="settings.html">Settings</a></li>
+                <li><a href="staffdash.html">Members</a></li>
+                <li><a href="items.html">Items</a></li>
                 <li class="logout"><a href="login.html">Logout</a></li>
             </ul>
         </nav>
     </header>
 
     <main class="dashboard">
-
         <section class="hero">
             <h1>Welcome, Worker!</h1>
         </section>
 
         <section class="products">
-
-            <h2>Members</h2>
-
-            <div class="product">
-
-                <div class="product-card">
-                    <img src="" alt="profile">
-
-                    <div class="product-content">
-                        <p class="category">Rayven</p>
-                        <h3>member</h3>
-                    </div>
-                </div>
-
+            <div class="members-heading">
+                <h2>Members</h2>
             </div>
 
-        </section>
+            <div id="notice" class="notice" role="status"></div>
 
+            <div id="membersList" class="members-list">
+                <div class="members-message">Loading members...</div>
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
         <p>&copy; 2026 Westeria Inventory System</p>
     </footer>
+
+    <script>
+        "use strict";
+
+        const membersList = document.getElementById("membersList");
+        const notice = document.getElementById("notice");
+
+        let refreshTimer;
+        let noticeTimer;
+        let isLoading = false;
+
+        function showNotice(message, type) {
+            clearTimeout(noticeTimer);
+            notice.textContent = message;
+            notice.className = "notice " + type;
+
+            noticeTimer = setTimeout(function() {
+                notice.className = "notice";
+                notice.textContent = "";
+            }, 3500);
+        }
+
+        async function apiRequest(url, options = {}) {
+            const response = await fetch(url, options);
+            let data;
+
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error("Invalid server response. Check process_members.php.");
+            }
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "The request failed.");
+            }
+
+            return data;
+        }
+
+        function createMemberCard(member) {
+            const memberId = Number(member.id);
+            const username = String(member.username ?? "Unknown user");
+            const isBlocked = Number(member.is_blocked) === 1;
+
+            const card = document.createElement("article");
+            card.className = "member-card";
+
+            if (isBlocked) {
+                card.classList.add("blocked-card");
+            }
+
+            const avatar = document.createElement("div");
+            avatar.className = "member-avatar";
+            avatar.textContent = username.charAt(0).toUpperCase();
+
+            const info = document.createElement("div");
+            info.className = "member-info";
+
+            const name = document.createElement("h3");
+            name.textContent = username;
+
+            const status = document.createElement("p");
+            status.className = "member-status " + (isBlocked ? "blocked" : "active");
+            status.textContent = isBlocked ? "Account Blocked" : "Account Active";
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "member-action " + (isBlocked ? "unblock" : "block");
+            button.textContent = isBlocked ? "Unblock" : "Block";
+
+            if (!Number.isSafeInteger(memberId) || memberId <= 0) {
+                button.disabled = true;
+                button.textContent = "Unavailable";
+            } else {
+                button.addEventListener("click", function() {
+                    changeMemberStatus(memberId, username, isBlocked, button);
+                });
+            }
+
+            info.append(name, status, button);
+            card.append(avatar, info);
+
+            return card;
+        }
+
+        async function loadMembers(showLoading = false) {
+            if (isLoading) {
+                return;
+            }
+
+            isLoading = true;
+
+            if (showLoading) {
+                membersList.replaceChildren();
+                const loading = document.createElement("div");
+                loading.className = "members-message";
+                loading.textContent = "Loading members...";
+                membersList.appendChild(loading);
+            }
+
+            try {
+                const data = await apiRequest("process_members.php", {
+                    method: "GET",
+                    cache: "no-store"
+                });
+
+                if (!Array.isArray(data.members)) {
+                    throw new Error("The server returned an invalid member list.");
+                }
+
+                const fragment = document.createDocumentFragment();
+
+                data.members.forEach(function(member) {
+                    fragment.appendChild(createMemberCard(member));
+                });
+
+                if (data.members.length === 0) {
+                    const empty = document.createElement("div");
+                    empty.className = "members-message";
+                    empty.textContent = "No registered members found yet.";
+                    fragment.appendChild(empty);
+                }
+
+                membersList.replaceChildren(fragment);
+            } catch (error) {
+                console.error("Member loading error:", error);
+
+                if (membersList.children.length === 0 || showLoading) {
+                    const errorMessage = document.createElement("div");
+                    errorMessage.className = "members-message error";
+                    errorMessage.textContent = error.message;
+                    membersList.replaceChildren(errorMessage);
+                }
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function changeMemberStatus(id, username, isBlocked, button) {
+            const action = isBlocked ? "unblock" : "block";
+            const question = isBlocked
+                ? "Are you sure you want to unblock " + username + "?"
+                : "Are you sure you want to block " + username + "?";
+
+            if (!confirm(question)) {
+                return;
+            }
+
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = isBlocked ? "Unblocking..." : "Blocking...";
+
+            const formData = new FormData();
+            formData.append("action", action);
+            formData.append("id", String(id));
+
+            try {
+                const data = await apiRequest("process_members.php", {
+                    method: "POST",
+                    body: formData
+                });
+
+                showNotice(data.message, "success");
+                await loadMembers();
+            } catch (error) {
+                showNotice(error.message, "error");
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+        loadMembers(true);
+
+        refreshTimer = setInterval(function() {
+            loadMembers(false);
+        }, 5000);
+
+        window.addEventListener("beforeunload", function() {
+            clearInterval(refreshTimer);
+            clearTimeout(noticeTimer);
+        });
+    </script>
 
 </body>
 </html>
