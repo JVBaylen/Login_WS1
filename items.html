@@ -7,6 +7,359 @@
     <link rel="stylesheet" href="staffdash.css">
 
 </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Westerian Dashboard</title>
+    <link rel="stylesheet" href="staffdash.css">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <img src="Westeria Logo with Fierce Wolf Emblem.png" alt="Westeria Logo">
+        </div>
+
+        <nav>
+            <ul class="nav-links">
+                <li><a href="staffdash.html">Members</a></li>
+                <li><a href="items.html">Items</a></li>
+                <li class="logout"><a href="login.html">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="hero">
+            <h1>Welcome, Worker!</h1>
+        </section>
+
+        <section class="products">
+
+            <div class="items-header">
+                <h2>Items</h2>
+
+                <button
+                    type="button"
+                    class="add-item-btn"
+                    onclick="openAddItemModal()">
+                    + Add Item
+                </button>
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <div class="product" id="productList">
+                <div class="empty-message">Loading items...</div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Westeria Inventory System</p>
+    </footer>
+
+    <div class="modal" id="addItemModal">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h2>Add Item</h2>
+
+                <button
+                    type="button"
+                    class="close-btn"
+                    onclick="closeAddItemModal()">
+                    &times;
+                </button>
+            </div>
+
+            <form id="addItemForm" enctype="multipart/form-data">
+
+                <div class="form-group">
+                    <label for="itemPicture">Item Picture</label>
+
+                    <input
+                        type="file"
+                        id="itemPicture"
+                        name="picture"
+                        accept="image/*"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+
+                    <input
+                        type="text"
+                        id="itemName"
+                        name="name"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="itemPrice">Price</label>
+
+                    <input
+                        type="text"
+                        id="itemPrice"
+                        name="price"
+                        placeholder="Example: ₱100.00"
+                        required>
+                </div>
+
+                <button type="submit" class="save-item-btn">
+                    Save Item
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+<script>
+"use strict";
+
+const modal = document.getElementById("addItemModal");
+const form = document.getElementById("addItemForm");
+const productList = document.getElementById("productList");
+const message = document.getElementById("message");
+
+let messageTimer;
+
+function openAddItemModal() {
+    modal.style.display = "flex";
+}
+
+function closeAddItemModal() {
+    modal.style.display = "none";
+    form.reset();
+}
+
+window.addEventListener("click", function(event) {
+    if (event.target === modal) {
+        closeAddItemModal();
+    }
+});
+
+function showMessage(text, type) {
+    clearTimeout(messageTimer);
+
+    message.textContent = text;
+    message.className = "message " + type;
+    message.style.display = "block";
+
+    messageTimer = setTimeout(function() {
+        message.style.display = "none";
+    }, 4000);
+}
+
+function escapeHTML(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+async function loadItems() {
+    productList.innerHTML = `
+        <div class="empty-message">Loading items...</div>
+    `;
+
+    try {
+        const response = await fetch(
+            "process_items.php?action=list",
+            { cache: "no-store" }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Unable to load items.");
+        }
+
+        if (!Array.isArray(data.items)) {
+            throw new Error("Invalid item list received from server.");
+        }
+
+        productList.innerHTML = "";
+
+        if (data.items.length === 0) {
+            productList.innerHTML = `
+                <div class="empty-message">
+                    No items have been added yet.
+                </div>
+            `;
+            return;
+        }
+
+        data.items.forEach(function(item) {
+            const itemId = Number(item.id);
+
+            console.log("Item received from PHP:", item);
+            console.log("Item ID:", item.id);
+
+            const card = document.createElement("div");
+            card.className = "product-card";
+
+            const image = document.createElement("img");
+            image.src = "data:image/jpeg;base64," + (item.picture || "");
+            image.alt = String(item.name ?? "Item");
+
+            const content = document.createElement("div");
+            content.className = "product-content";
+
+            const name = document.createElement("p");
+            name.className = "category";
+            name.textContent = item.name ?? "";
+
+            const price = document.createElement("h3");
+            price.textContent = "₱" + String(item.price ?? "");
+
+            content.appendChild(name);
+            content.appendChild(price);
+
+            const buttonContainer = document.createElement("div");
+            buttonContainer.className = "memberbutton";
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "block remove-item-btn";
+            removeButton.textContent = "Remove";
+
+            if (!Number.isSafeInteger(itemId) || itemId <= 0) {
+                removeButton.disabled = true;
+                removeButton.title = "This item has no valid database ID.";
+                console.error("Invalid item ID received:", item);
+            } else {
+                removeButton.addEventListener("click", function() {
+                    removeItem(itemId, removeButton);
+                });
+            }
+
+            buttonContainer.appendChild(removeButton);
+
+            card.appendChild(image);
+            card.appendChild(content);
+            card.appendChild(buttonContainer);
+
+            productList.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("Load items error:", error);
+
+        productList.innerHTML = `
+            <div class="empty-message">
+                Unable to load items. Please try again.
+            </div>
+        `;
+
+        showMessage(error.message, "error");
+    }
+}
+
+form.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const submitButton = form.querySelector(
+        'button[type="submit"]'
+    );
+
+    const formData = new FormData(form);
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Saving...";
+
+    try {
+        const response = await fetch("process_items.php", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Failed to add item.");
+        }
+
+        closeAddItemModal();
+
+        showMessage("Item added successfully!", "success");
+
+        await loadItems();
+
+    } catch (error) {
+        console.error("Add item error:", error);
+        showMessage(error.message, "error");
+
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Save Item";
+    }
+});
+
+async function removeItem(id, button) {
+    if (!Number.isSafeInteger(id) || id <= 0) {
+        showMessage("Invalid item ID. Please reload the page.", "error");
+        console.error("Invalid ID passed to removeItem:", id);
+        return;
+    }
+
+    if (!confirm("Are you sure you want to remove this item?")) {
+        return;
+    }
+
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = "Removing...";
+
+    try {
+        const formData = new FormData();
+
+        formData.append("action", "remove");
+        formData.append("id", String(id));
+
+        console.log("Sending removal request for item ID:", id);
+
+        const response = await fetch("process_items.php", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Failed to remove item.");
+        }
+
+        showMessage("Item removed successfully!", "success");
+
+        await loadItems();
+
+    } catch (error) {
+        console.error("Remove item error:", error);
+
+        showMessage(error.message, "error");
+
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+loadItems();
+
+</script>
+
+</body>
+</html>
+
 
 <body>
 
