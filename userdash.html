@@ -1,21 +1,30 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Westerian Dashboard</title>
+
     <link rel="stylesheet" href="userdash.css">
+
 </head>
+
 <body>
 
     <header class="navbar">
-    <div class="logo">
-        <img src="Westeria Logo with Fierce Wolf Emblem.png" alt="Westeria Logo">
-    </div>
+        <div class="logo">
+            <img
+                src="Westeria Logo with Fierce Wolf Emblem.png"
+                alt="Westeria Logo"
+            >
+        </div>
+
         <nav>
             <ul class="nav-links">
-                <li><a href="profile.html">Profile</a></li>
-                <li><a href="settings.html">Settings</a></li>
+                <li><a href="userdash.html">Available Items</a></li>
+                <li><a href="myitems.html">My Items</a></li>
                 <li class="logout"><a href="login.html">Logout</a></li>
             </ul>
         </nav>
@@ -25,24 +34,21 @@
 
         <section class="hero">
             <h1>Welcome, Westerian!</h1>
-            <p>Manage your inventory, and organize your resources in one place.</p>
+            <p>Manage your inventory and organize your resources in one place.</p>
         </section>
 
         <section class="products">
 
             <h2>Product Inventory</h2>
 
-            <div class="product">
+            <div
+                id="inventoryMessage"
+                role="status"
+                aria-live="polite"
+            ></div>
 
-                <div class="product-card">
-                    <img src="https://m.media-amazon.com/images/I/51+IW4E6HaL._AC_SL1500_.jpg" alt="Katana">
-
-                    <div class="product-content">
-                        <p class="category">Weapon</p>
-                        <h3>Katana</h3>
-                    </div>
-                </div>
-
+            <div class="product" id="productList">
+                <div class="empty-message">Loading items...</div>
             </div>
 
         </section>
@@ -52,6 +58,238 @@
     <footer class="footer">
         <p>&copy; 2026 Westeria Inventory System</p>
     </footer>
+
+    <script>
+        "use strict";
+
+        const productList = document.getElementById("productList");
+        const inventoryMessage = document.getElementById("inventoryMessage");
+
+        let refreshTimer;
+        let isLoading = false;
+        let isFirstLoad = true;
+
+        async function buyItem(item, button) {
+            if (!item.id) {
+                alert("This item has no database ID. Please check your PHP response.");
+                return;
+            }
+
+            const confirmed = confirm(
+                "Do you want to buy " + String(item.name || "this item") + "?"
+            );
+
+            if (!confirmed) {
+                return;
+            }
+            button.disabled = true;
+            button.textContent = "Processing...";
+
+            try {
+                const response = await fetch(
+                    "process_items.php?action=buy",
+                    {
+                        method: "POST",
+                        cache: "no-store",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            item_id: item.id
+                        })
+                    }
+                );
+
+                let data;
+
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error(
+                        "Invalid server response. Check process_items.php."
+                    );
+                }
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Unable to complete the purchase."
+                    );
+                }
+
+                alert("Item successfully added to My Items!");
+
+                window.location.href = "myitems.html";
+
+            } catch (error) {
+                console.error("Buy item error:", error);
+
+                alert(error.message || "Something went wrong.");
+
+                button.disabled = false;
+                button.textContent = "Buy It";
+            }
+        }
+
+        async function loadItems() {
+            if (isLoading) {
+                return;
+            }
+
+            isLoading = true;
+
+            if (isFirstLoad) {
+                productList.replaceChildren();
+
+                const loading = document.createElement("div");
+                loading.className = "empty-message";
+                loading.textContent = "Loading items...";
+
+                productList.appendChild(loading);
+            }
+
+            try {
+                const response = await fetch(
+                    "process_items.php?action=list",
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                        credentials: "same-origin"
+                    }
+                );
+
+                let data;
+
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error(
+                        "Invalid server response. Check process_items.php."
+                    );
+                }
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Unable to load inventory."
+                    );
+                }
+
+                if (!Array.isArray(data.items)) {
+                    throw new Error("Invalid inventory data received.");
+                }
+
+                const fragment = document.createDocumentFragment();
+
+                if (data.items.length === 0) {
+                    const empty = document.createElement("div");
+                    empty.className = "empty-message";
+                    empty.textContent = "No items are available yet.";
+
+                    fragment.appendChild(empty);
+                }
+
+                data.items.forEach(function(item) {
+                    const card = document.createElement("div");
+                    card.className = "product-card";
+
+                    const image = document.createElement("img");
+
+                    image.alt = String(item.name || "Inventory item");
+                    image.loading = "lazy";
+
+                    if (item.picture) {
+                        const picture = String(item.picture);
+
+                        image.src = picture.startsWith("data:image/")
+                            ? picture
+                            : "data:image/jpeg;base64," + picture;
+                    } else {
+                        image.alt = "No picture available";
+                    }
+
+                    image.addEventListener("error", function() {
+                        image.removeAttribute("src");
+                        image.alt = "Picture unavailable";
+                    });
+
+                    const content = document.createElement("div");
+                    content.className = "product-content";
+
+                    const category = document.createElement("p");
+                    category.className = "category";
+                    category.textContent = "Inventory Item";
+
+                    const name = document.createElement("h3");
+                    name.textContent = String(item.name || "Unnamed Item");
+
+                    const price = document.createElement("p");
+                    price.className = "item-price";
+
+                    const rawPrice = String(item.price ?? "");
+
+                    price.textContent = rawPrice.startsWith("₱")
+                        ? rawPrice
+                        : "₱" + rawPrice;
+
+                    // Create the Buy It button.
+                    const buyButton = document.createElement("button");
+                    buyButton.type = "button";
+                    buyButton.className = "buy-button";
+                    buyButton.textContent = "Buy It";
+
+                    buyButton.addEventListener("click", function() {
+                        buyItem(item, buyButton);
+                    });
+
+                    content.append(
+                        category,
+                        name,
+                        price,
+                        buyButton
+                    );
+
+                    card.append(image, content);
+                    fragment.appendChild(card);
+                });
+
+                productList.replaceChildren(fragment);
+
+                inventoryMessage.textContent = "";
+                isFirstLoad = false;
+
+            } catch (error) {
+                console.error("Inventory loading error:", error);
+
+                if (isFirstLoad) {
+                    productList.replaceChildren();
+
+                    const errorMessage = document.createElement("div");
+                    errorMessage.className = "empty-message";
+                    errorMessage.textContent =
+                        "Unable to load items. Please try again.";
+
+                    productList.appendChild(errorMessage);
+                }
+
+                inventoryMessage.textContent =
+                    "Inventory update failed. Retrying automatically.";
+
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        loadItems();
+
+        refreshTimer = setInterval(function() {
+            loadItems();
+        }, 3000);
+
+        window.addEventListener("beforeunload", function() {
+            clearInterval(refreshTimer);
+        });
+    </script>
 
 </body>
 </html>
